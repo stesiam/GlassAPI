@@ -4,11 +4,15 @@ library(forcats)
 library(tidymodels)
 library(themis)
 
+
 library(ranger) # Engine used for Random Forest model
 
+library(ggplot2)
+library(ggtext)
 
 glass = readr::read_csv("glass.csv",
                         col_names = c("ID", "RI", "Na", "Mg", "Al", "Si","K", "Ca", "Ba", "Fe", "glass_type"))
+readr::write_csv(glass, "glass.csv")
 
 
 glass$glass_type <- glass$glass_type %>%
@@ -50,6 +54,11 @@ Prior modelling it is advised to deal with that<br> imbalance of data to get mor
   )
 
 
+# Remove ID column
+
+glass = glass %>%
+  select(-ID)
+
 # Split dataset
 
 set.seed(200)
@@ -64,7 +73,6 @@ test <- rsample::testing(split)
 #
 
 rf_rec <- recipe(glass_type ~ ., data = train) %>%
-  step_rm("ID") %>%
   step_smote(glass_type)
 
 
@@ -93,7 +101,7 @@ rf_wf <- workflow() %>%
 ## Create CV 
 
 set.seed(234)
-trees_folds <- vfold_cv(train, v = 10)
+trees_folds <- vfold_cv(train, v = 3)
 
 ## Tune parameters
 
@@ -104,7 +112,7 @@ tune_res <- tune_grid(
   resamples = trees_folds,
   control = control_resamples(
     save_pred = TRUE),
-  grid = 120
+  grid = 10
 )
 
 ## Evaluate cv 
@@ -112,6 +120,16 @@ tune_res <- tune_grid(
 tune_res %>%
   collect_metrics(summarize = T)
 best_auc <- select_best(tune_res, "roc_auc")
+
+
+## Evaluate test performance
+
+final_rf <- finalize_model(
+  rf_model,
+  best_auc
+)
+
+final_rf
 
 # Importance of variables
 
@@ -124,17 +142,6 @@ final_rf %>%
   ) %>%
   vip(geom = "point") + 
   theme_classic()
-
-
-
-## Evaluate test performance
-
-final_rf <- finalize_model(
-  rf_model,
-  best_auc
-)
-
-final_rf
 
 final_wf <- workflow() %>%
   add_recipe(rf_rec) %>%
@@ -152,3 +159,26 @@ final_res %>%
 
 final_model_rf = fit(final_wf, glass)
 saveRDS(final_model_rf, "glass.rds")
+
+## Test data 
+
+model_data = dplyr::tibble(
+  RI = 5,
+  Na = mean(glass$Na),
+  Mg = mean(glass$Mg),
+  Al = mean(glass$Al),
+  Si = mean(glass$Si),
+  K = mean(glass$K),
+  Ca = mean(glass$Ca),
+  Ba = mean(glass$Ba),
+  Fe = mean(glass$Fe),
+)
+
+prediction = predict(final_model_rf, new_data = model_data,type = "prob") %>%
+  pivot_longer(., names_to = "Result", values_to = "Probability", cols = everything())
+
+prediction$Result = prediction$Result %>%
+  stringr::str_remove(".pred_") %>%
+  stringr::str_to_title()
+
+prediction
