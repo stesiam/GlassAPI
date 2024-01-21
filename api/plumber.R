@@ -1,20 +1,16 @@
 ## Plumber API using RapiDoc
 
 
+
 library(plumber)
 library(rapidoc)
+library(tidymodels)
+library(ranger)
 library(purrr)
 library(readr)
 library(dplyr)
-library(forcats)
-library(tidymodels)
-library(themis)
-
-library(ranger)
-
-library(datasets)
-
-iris = datasets::iris
+library(rlang)
+library(ggplot2)
 
 glass = readRDS("../glass.rds")
 glass_data = readr::read_csv("../glass.csv")
