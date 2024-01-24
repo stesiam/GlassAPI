@@ -11,6 +11,18 @@ You can get the image by running the following command in your terminal:
 docker pull stesiam/glass-api
 ```
 
+To run the image:
+
+```bash
+docker run -p 8000:8000 stesiam/glass-api
+```
+
+When you run the image, the API documentation will be available at <a href="http://127.0.0.1:8000/__docs__/">http://127.0.0.1:8000/__docs__/</a>
+
+**Note :** In case you get a permission error, consider to use <b><i>sudo</i></b> on the aforementionned commands.
+
+<hr>
+
 📦 **DockerHub Repo:** [glass-api](https://hub.docker.com/r/stesiam/glass-api)
 
 💾 **Data Source:**  [UCI Machine Learning Repository](http://archive.ics.uci.edu/dataset/42/glass+identification)
